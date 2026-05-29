@@ -1,0 +1,8 @@
+# Dependencies for the web app (app/app.py)
+# Install with: pip install -r requirements_app.txt
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.12
+pillow==10.4.0
+numpy==1.26.4
+tensorflow==2.21.0

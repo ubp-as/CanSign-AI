@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traffic Sign Classifier</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141416;
+    --surface2: #1c1c1f;
+    --border: #2a2a2e;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --text: #f0f0f0;
+    --muted: #666;
+    --success: #4fffb0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 24px;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 680px;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 48px;
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .eyebrow::before, .eyebrow::after {
+    content: '';
+    height: 1px;
+    width: 40px;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 10vw, 80px);
+    letter-spacing: 0.04em;
+    line-height: 0.95;
+    background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  h1 span {
+    background: linear-gradient(135deg, var(--accent) 0%, #b8cc00 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin-top: 16px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    background: var(--surface);
+    border: 1.5px dashed var(--border);
+    border-radius: 16px;
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dropzone::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(232,255,71,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
+
+  .dropzone.dragover {
+    border-style: solid;
+  }
+
+  .drop-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+    filter: grayscale(0.3);
+    transition: transform 0.2s;
+  }
+
+  .dropzone:hover .drop-icon {
+    transform: scale(1.1) rotate(-5deg);
+  }
+
+  .drop-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .drop-sub {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .browse-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 24px;
+    background: var(--accent);
+    color: #000;
+    font-weight: 500;
+    font-size: 13px;
+    border-radius: 8px;
+    letter-spacing: 0.03em;
+    transition: background 0.2s, transform 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .browse-btn:hover {
+    background: #d4eb30;
+    transform: scale(1.03);
+  }
+
+  input[type="file"] { display: none; }
+
+  /* Preview */
+  .preview-wrap {
+    display: none;
+    margin-top: 24px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+    background: var(--surface);
+  }
+
+  .preview-wrap img {
+    width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+    display: block;
+    padding: 16px;
+  }
+
+  .preview-name {
+    padding: 10px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .clear-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.2s;
+  }
+  .clear-btn:hover { color: var(--accent2); }
+
+  /* Analyze button */
+  .analyze-btn {
+    display: none;
+    width: 100%;
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--accent);
+    color: #000;
+    font-weight: 600;
+    font-size: 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .analyze-btn:hover:not(:disabled) {
+    background: #d4eb30;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(232,255,71,0.25);
+  }
+
+  .analyze-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Spinner */
+  .spinner {
+    display: none;
+    margin: 32px auto;
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Results */
+  .results {
+    display: none;
+    margin-top: 32px;
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* Top result card */
+  .top-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .top-result::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .top-sign-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .confidence-bar-wrap {
+    background: var(--border);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .confidence-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #b8cc00);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .confidence-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Other predictions */
+  .others-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .other-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .other-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .other-item:hover { border-color: #444; }
+
+  .rank-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .other-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 400;
+  }
+
+  .other-bar-wrap {
+    width: 80px;
+    background: var(--border);
+    border-radius: 3px;
+    height: 4px;
+    flex-shrink: 0;
+  }
+
+  .other-bar {
+    height: 100%;
+    background: var(--muted);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.1s;
+  }
+
+  .other-conf {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    width: 44px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Error */
+  .error-box {
+    display: none;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: rgba(255, 107, 53, 0.08);
+    border: 1px solid rgba(255, 107, 53, 0.3);
+    border-radius: 10px;
+    color: var(--accent2);
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 56px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: #333;
+    letter-spacing: 0.1em;
+  }
+
+  footer a {
+    color: #555;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  footer a:hover { color: var(--accent); }
+
+  /* Try again */
+  .try-again {
+    display: none;
+    margin-top: 20px;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .try-again:hover {
+    color: var(--text);
+    border-color: #444;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="eyebrow">Canadian Traffic Sign Classifier</div>
+    <h1>SIGN<br><span>DETECT</span></h1>
+    <p class="subtitle">CNN model trained on 50,000+ traffic signs · 43 classes · 99%+ accuracy</p>
+  </header>
+
+  <div class="dropzone" id="dropzone">
+    <span class="drop-icon">🚦</span>
+    <div class="drop-title">Drop a traffic sign image</div>
+    <div class="drop-sub">PNG, JPG, JPEG — any size</div>
+    <button class="browse-btn" onclick="document.getElementById('fileInput').click()">Browse files</button>
+    <input type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="preview-wrap" id="previewWrap">
+    <img id="previewImg" src="" alt="Preview">
+    <div class="preview-name">
+      <span id="fileName"></span>
+      <button class="clear-btn" id="clearBtn" title="Remove">✕</button>
+    </div>
+  </div>
+
+  <button class="analyze-btn" id="analyzeBtn">Analyze Sign</button>
+
+  <div class="spinner" id="spinner"></div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="results" id="results">
+    <div class="result-label">Top Prediction</div>
+    <div class="top-result">
+      <div class="top-sign-name" id="topName">—</div>
+      <div class="confidence-bar-wrap">
+        <div class="confidence-bar" id="topBar"></div>
+      </div>
+      <div class="confidence-text">
+        <span>Confidence</span>
+        <span id="topConf">—</span>
+      </div>
+    </div>
+
+    <div class="others-label">Other Possibilities</div>
+    <div class="other-results" id="otherResults"></div>
+  </div>
+
+  <button class="try-again" id="tryAgain">↩ Try another image</button>
+
+  <footer>
+    <a href="https://github.com" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    GTSRB Dataset &nbsp;·&nbsp; Built with TensorFlow + FastAPI
+  </footer>
+</div>
+
+<script>
+const dropzone    = document.getElementById('dropzone');
+const fileInput   = document.getElementById('fileInput');
+const previewWrap = document.getElementById('previewWrap');
+const previewImg  = document.getElementById('previewImg');
+const fileName    = document.getElementById('fileName');
+const clearBtn    = document.getElementById('clearBtn');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+const spinner     = document.getElementById('spinner');
+const errorBox    = document.getElementById('errorBox');
+const results     = document.getElementById('results');
+const tryAgain    = document.getElementById('tryAgain');
+
+let selectedFile = null;
+
+// ── Drag events ──────────────────────────────────────────────────────────────
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadFile(file);
+});
+dropzone.addEventListener('click', e => {
+  if (e.target !== fileInput && !e.target.classList.contains('browse-btn')) {
+    fileInput.click();
+  }
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+// ── Load file ────────────────────────────────────────────────────────────────
+function loadFile(file) {
+  selectedFile = file;
+  const url = URL.createObjectURL(file);
+  previewImg.src = url;
+  fileName.textContent = file.name;
+  previewWrap.style.display = 'block';
+  analyzeBtn.style.display  = 'block';
+  dropzone.style.display    = 'none';
+  results.style.display     = 'none';
+  tryAgain.style.display    = 'none';
+  errorBox.style.display    = 'none';
+}
+
+// ── Clear ────────────────────────────────────────────────────────────────────
+clearBtn.addEventListener('click', reset);
+tryAgain.addEventListener('click', reset);
+
+function reset() {
+  selectedFile = null;
+  fileInput.value = '';
+  previewWrap.style.display = 'none';
+  analyzeBtn.style.display  = 'none';
+  results.style.display     = 'none';
+  tryAgain.style.display    = 'none';
+  errorBox.style.display    = 'none';
+  dropzone.style.display    = 'block';
+}
+
+// ── Analyze ──────────────────────────────────────────────────────────────────
+analyzeBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+
+  analyzeBtn.disabled      = true;
+  spinner.style.display    = 'block';
+  errorBox.style.display   = 'none';
+  results.style.display    = 'none';
+
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  try {
+    const res = await fetch('/predict', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.detail || 'Prediction failed');
+
+    showResults(data);
+  } catch (err) {
+    errorBox.textContent   = '⚠ ' + err.message;
+    errorBox.style.display = 'block';
+  } finally {
+    spinner.style.display  = 'none';
+    analyzeBtn.disabled    = false;
+  }
+});
+
+// ── Show results ─────────────────────────────────────────────────────────────
+function showResults(data) {
+  document.getElementById('topName').textContent = data.top_prediction;
+  document.getElementById('topConf').textContent = data.confidence.toFixed(1) + '%';
+
+  results.style.display  = 'flex';
+  results.style.flexDirection = 'column';
+  results.style.display  = 'block';
+
+  // Animate top bar after paint
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.getElementById('topBar').style.width = data.confidence + '%';
+    }, 50);
+  });
+
+  // Other predictions (rank 2 and 3)
+  const others = data.top3.slice(1);
+  const container = document.getElementById('otherResults');
+  container.innerHTML = '';
+
+  others.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'other-item';
+    div.innerHTML = `
+      <span class="rank-badge">#${item.rank}</span>
+      <span class="other-name">${item.sign_name}</span>
+      <div class="other-bar-wrap"><div class="other-bar" id="obar${i}"></div></div>
+      <span class="other-conf">${item.confidence.toFixed(1)}%</span>
+    `;
+    container.appendChild(div);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.getElementById(`obar${i}`).style.width = item.confidence + '%';
+      }, 100 + i * 80);
+    });
+  });
+
+  tryAgain.style.display = 'block';
+  analyzeBtn.style.display = 'none';
+}
+</script>
+</body>
+</html>

@@ -86,7 +86,7 @@ RUN pip install -r requirements_app.txt
 EXPOSE 7860
 CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "7860"]
 ```
-5. Your live demo URL: `https://huggingface.co/spaces/YOUR_USERNAME/traffic-sign-classifier`
+5. Your live demo URL: `https://huggingface.co/spaces/ubp-as/traffic-sign-classifier`
 
 ## Dataset
 - **GTSRB** (German Traffic Sign Recognition Benchmark)

@@ -1,0 +1,7 @@
+# Local dependencies (for predict_image.py and evaluate_model.py)
+tensorflow==2.21.0
+tensorflow-datasets
+scikit-learn
+numpy
+pillow
+opencv-python

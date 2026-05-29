@@ -13,7 +13,7 @@ A CNN-based traffic sign classifier trained on the GTSRB dataset, mapped to Cana
 ├── train_colab.ipynb           # Training notebook — run on Google Colab GPU
 ├── requirements.txt            # Local ML dependencies
 ├── requirements_app.txt        # Web app dependencies
-├── traffic_sign_model.h5       # Trained model (download from Colab after training)
+├── traffic_sign_model.keras       # Trained model (download from Colab after training)
 └── app/
     ├── app.py                  # FastAPI backend (REST API)
     └── static/
@@ -76,7 +76,7 @@ Response:
 
 1. Create a free account at [huggingface.co](https://huggingface.co)
 2. New Space → SDK: **Docker**
-3. Upload all project files including `traffic_sign_model.h5`
+3. Upload all project files including `traffic_sign_model.keras`
 4. Add a `Dockerfile`:
 ```dockerfile
 FROM python:3.11-slim

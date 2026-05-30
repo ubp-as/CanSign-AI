@@ -4,7 +4,7 @@
 
 A CNN-based traffic sign classifier trained on 50,000+ images across 43 Canadian road sign classes. Achieves **99%+ test accuracy**. Includes a drag-and-drop web demo — upload any traffic sign photo and get an instant prediction with confidence scores.
 
-![Web Demo](app/static/preview.png)
+![Web Demo](preview.png)
 
 ---
 
@@ -21,6 +21,28 @@ Images are resized to 32×32, normalized, and passed through a custom CNN with t
 - ⚡ **FastAPI backend** — clean REST API, returns JSON, easy to integrate into other projects
 - 🇨🇦 **Mapped to Canadian signs** — all 43 GTSRB classes labeled with Canadian road sign names
 - 🚫 **No horizontal flip augmentation** — traffic signs are not symmetric, so this was intentionally excluded during training
+
+---
+
+## Run locally
+
+```bash
+git clone https://github.com/ubp-as/Canadian-Traffic-Sign-Classifier.git
+cd Canadian-Traffic-Sign-Classifier
+pip install -r requirements_app.txt
+```
+
+Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/traffic-sign-classifier/tree/main), place it in the project root, then:
+
+```bash
+uvicorn app.app:app --reload
+```
+
+Open **http://localhost:8000** — or predict a single image via CLI:
+
+```bash
+python predict_image.py path/to/sign.jpg
+```
 
 ---
 

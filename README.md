@@ -1,4 +1,4 @@
-# 🚦 CanSign AI
+# 🚦 Traffic-Sign-Classifier
 
 **[Try the live demo →](https://huggingface.co/spaces/ubp-as/traffic-sign-classifier)**
 
@@ -32,7 +32,7 @@ cd CanSign-AI
 pip install -r requirements_app.txt
 ```
 
-Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/CanSign-AI/tree/main), place it in the project root, then:
+Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/CanSign-AI), place it in the project root, then:
 
 ```bash
 uvicorn app.app:app --reload

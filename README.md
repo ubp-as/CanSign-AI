@@ -14,29 +14,13 @@ Images are resized to 32×32, normalized, and passed through a custom CNN with t
 
 ---
 
-## Run locally
+## Features
 
-**1. Clone the repo and install dependencies**
-```bash
-git clone https://github.com/ubp-as/Canadian-Traffic-Sign-Classifier.git
-cd Canadian-Traffic-Sign-Classifier
-pip install -r requirements_app.txt
-```
-
-**2. Download the model**
-
-Download `traffic_sign_model.keras` from the [Hugging Face repo](https://huggingface.co/spaces/ubp-as/traffic-sign-classifier/tree/main) and place it in the project root.
-
-**3. Start the web app**
-```bash
-uvicorn app.app:app --reload
-```
-Open **http://localhost:8000** and drag in any traffic sign image.
-
-**4. Or use the CLI**
-```bash
-python predict_image.py path/to/sign.jpg
-```
+- 🖼️ **Drag-and-drop web interface** — upload any traffic sign photo, get an instant prediction
+- 📊 **Top 3 predictions** with confidence bars so you can see how certain the model is
+- ⚡ **FastAPI backend** — clean REST API, returns JSON, easy to integrate into other projects
+- 🇨🇦 **Mapped to Canadian signs** — all 43 GTSRB classes labeled with Canadian road sign names
+- 🚫 **No horizontal flip augmentation** — traffic signs are not symmetric, so this was intentionally excluded during training
 
 ---
 
@@ -66,21 +50,3 @@ Content-Type: multipart/form-data
 - **Training:** tf.data pipeline with augmentation (rotation, zoom, brightness — no horizontal flip)
 - **Hardware:** Google Colab T4 GPU
 - **Accuracy: 99%+** on held-out test set
-
----
-
-## Project Structure
-
-```
-├── app/
-│   ├── app.py              # FastAPI backend
-│   └── static/
-│       └── index.html      # Web frontend
-├── canadian_labels.py      # Class ID → sign name mapping
-├── cnn_model.py            # CNN architecture
-├── data_preprocessing.py   # Data loading and augmentation
-├── predict_image.py        # CLI prediction tool
-├── train_colab.ipynb       # Training notebook (Colab)
-├── requirements.txt        # ML dependencies
-└── requirements_app.txt    # Web app dependencies
-```

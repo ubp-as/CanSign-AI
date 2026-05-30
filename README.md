@@ -1,4 +1,4 @@
-# 🚦 Canadian Traffic Sign Classifier
+# 🚦 CanSign AI
 
 **[Try the live demo →](https://huggingface.co/spaces/ubp-as/traffic-sign-classifier)**
 

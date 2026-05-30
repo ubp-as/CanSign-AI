@@ -1,6 +1,6 @@
-# 🚦 Traffic-Sign-Classifier
+# 🚦 CanSign-AI
 
-**[Try the live demo →](https://huggingface.co/spaces/ubp-as/traffic-sign-classifier)**
+**[Try the live demo →](https://huggingface.co/spaces/ubp-as/CanSign-AI)**
 
 A CNN-based traffic sign classifier trained on 50,000+ images across 43 Canadian road sign classes. Achieves **99%+ test accuracy**. Includes a drag-and-drop web demo — upload any traffic sign photo and get an instant prediction with confidence scores.
 

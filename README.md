@@ -72,3 +72,16 @@ Content-Type: multipart/form-data
 - **Training:** tf.data pipeline with augmentation (rotation, zoom, brightness — no horizontal flip)
 - **Hardware:** Google Colab T4 GPU
 - **Accuracy: 99%+** on held-out test set
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Model | Custom CNN (TensorFlow / Keras) |
+| Backend | FastAPI + Uvicorn |
+| Frontend | HTML / CSS / JavaScript |
+| Training | Google Colab T4 GPU |
+| Dataset | GTSRB (43 classes, 50,000+ images) |
+| Hosting | Hugging Face Spaces |

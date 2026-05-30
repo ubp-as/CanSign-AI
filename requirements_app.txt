@@ -1,8 +1,7 @@
-# Dependencies for the web app (app/app.py)
-# Install with: pip install -r requirements_app.txt
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-python-multipart==0.0.12
-pillow==10.4.0
-numpy==1.26.4
-tensorflow==2.21.0
+# requirements_app.txt
+tensorflow>=2.15.0
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+opencv-python-headless>=4.9.0   # ← CRITICAL: headless version for servers
+numpy>=1.26.0

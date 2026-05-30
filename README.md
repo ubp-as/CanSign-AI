@@ -27,12 +27,12 @@ Images are resized to 32×32, normalized, and passed through a custom CNN with t
 ## Run locally
 
 ```bash
-git clone https://github.com/ubp-as/Canadian-Traffic-Sign-Classifier.git
-cd Canadian-Traffic-Sign-Classifier
+git clone https://github.com/ubp-as/CanSign-AI.git
+cd CanSign-AI
 pip install -r requirements_app.txt
 ```
 
-Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/traffic-sign-classifier/tree/main), place it in the project root, then:
+Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/CanSign-AI/tree/main), place it in the project root, then:
 
 ```bash
 uvicorn app.app:app --reload

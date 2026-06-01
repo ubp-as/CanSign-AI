@@ -44,44 +44,27 @@ CANADIAN_SIGNS = {
     40: "Roundabout Mandatory", 41: "End of No Passing", 42: "End of No Passing (Trucks)"
 }
 
-# ── Preprocessing (Matches Colab Cell 4 exactly + auto-crop) ──────────────────
+# ── Preprocessing (matches training pipeline exactly: resize + normalize only) ─
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError("Invalid image format")
-
-    # HSV color masking for signs
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    masks = [
-        cv2.inRange(hsv, np.array([0, 70, 50]), np.array([10, 255, 255])),
-        cv2.inRange(hsv, np.array([170, 70, 50]), np.array([180, 255, 255])),
-        cv2.inRange(hsv, np.array([20, 80, 80]), np.array([35, 255, 255])),
-        cv2.inRange(hsv, np.array([100, 70, 70]), np.array([120, 255, 255]))
-    ]
-    mask = cv2.bitwise_or(cv2.bitwise_or(masks[0], masks[1]), cv2.bitwise_or(masks[2], masks[3]))
-
-    # Clean mask
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-
-    # Find & crop largest plausible sign
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cropped = img
-    if contours:
-        c = max(contours, key=cv2.contourArea)
-        area = cv2.contourArea(c)
-        img_area = img.shape[0] * img.shape[1]
-        if 0.05 < (area / img_area) < 0.8:
-            x, y, w, h = cv2.boundingRect(c)
-            pad = int(max(w, h) * 0.1)
-            x1, y1 = max(0, x - pad), max(0, y - pad)
-            x2, y2 = min(img.shape[1], x + w + pad), min(img.shape[0], y + h + pad)
-            cropped = img[y1:y2, x1:x2]
-
-    # Resize & normalize exactly like training
-    resized = cv2.resize(cropped, (32, 32))
+    resized = cv2.resize(img, (32, 32))
     return np.expand_dims(resized.astype(np.float32) / 255.0, axis=0)
+
+
+def is_out_of_distribution(preds: np.ndarray) -> bool:
+    """Reject if top confidence is low OR predictions are too spread out.
+    Uses numpy only — no scipy needed."""
+    top_conf = float(np.max(preds))
+    if top_conf < 0.85:
+        return True
+    # Entropy: -sum(p * log(p)), max is ~3.76 for 43 uniform classes
+    eps = 1e-9
+    entropy = float(-np.sum(preds * np.log(preds + eps)))
+    if entropy > 1.5:  # confident predictions cluster near 0; spread = noise
+        return True
+    return False
 
 # ── API Endpoints ─────────────────────────────────────────────────────────────
 @app.post("/predict")
@@ -99,11 +82,11 @@ async def predict(file: UploadFile = File(...)):
     top3_idx = np.argsort(preds)[::-1][:3]
     top_conf = float(preds[top3_idx[0]])
 
-    if top_conf < 0.50:
+    if is_out_of_distribution(preds):
         return JSONResponse({
-            "top_prediction": "Unclear / Not a recognized sign",
+            "top_prediction": "Not a recognized traffic sign",
             "confidence": round(top_conf * 100, 1),
-            "top3": [{"rank": 1, "class_id": -1, "sign_name": "Unclear", "confidence": round(top_conf * 100, 1)}]
+            "top3": [{"rank": 1, "class_id": -1, "sign_name": "Not a recognized traffic sign", "confidence": round(top_conf * 100, 1)}]
         })
 
     top3 = []

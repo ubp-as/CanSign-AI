@@ -55,15 +55,30 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
 
 def is_out_of_distribution(preds: np.ndarray) -> bool:
     """Reject if top confidence is low OR predictions are too spread out.
-    Uses numpy only — no scipy needed."""
+    Uses numpy only — no scipy needed.
+
+    Thresholds explained:
+    - top_conf >= 0.92: model must be strongly committed to ONE class
+    - entropy < 0.8: very little probability mass on other classes
+    - top2_gap >= 0.70: top prediction must dominate over #2 by a wide margin
+    All three must pass. A real sign typically scores 0.95+, entropy ~0.1, gap ~0.9.
+    A random photo spreads probability across many classes even if one "wins".
+    """
     top_conf = float(np.max(preds))
-    if top_conf < 0.85:
+    if top_conf < 0.92:
         return True
-    # Entropy: -sum(p * log(p)), max is ~3.76 for 43 uniform classes
+
     eps = 1e-9
     entropy = float(-np.sum(preds * np.log(preds + eps)))
-    if entropy > 1.5:  # confident predictions cluster near 0; spread = noise
+    if entropy > 0.8:
         return True
+
+    # Gap between #1 and #2 must be large
+    sorted_preds = np.sort(preds)[::-1]
+    top2_gap = float(sorted_preds[0] - sorted_preds[1])
+    if top2_gap < 0.70:
+        return True
+
     return False
 
 # ── API Endpoints ─────────────────────────────────────────────────────────────

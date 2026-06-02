@@ -10,7 +10,7 @@ A CNN-based Canadian traffic sign classifier trained on 50,000+ images across 43
 
 ## How it works
 
-Images are resized to 32×32, normalized, and passed through a custom CNN with two convolutional blocks, batch normalization, and dropout. The model outputs a probability distribution across all 43 sign classes and returns the top 3 predictions. An entropy-based rejection filter rejects non-sign images — the model must exceed 92% confidence with low prediction entropy and a wide margin over the second-best class, otherwise it returns "Not a recognized traffic sign."
+Images are preprocessed using HSV color masking to isolate the sign region, then resized to 32×32 and normalized before being passed through a custom CNN with two convolutional blocks, batch normalization, and dropout. The model outputs a probability distribution across all 43 sign classes and returns the top 3 predictions. An entropy-based rejection filter rejects non-sign images — if the model's top prediction is below 50% confidence, the gap over the runner-up is too small, or prediction entropy is too high, it returns "Not a recognized traffic sign."
 
 Trained on a T4 GPU in Google Colab in under 20 minutes.
 
@@ -29,19 +29,57 @@ Trained on a T4 GPU in Google Colab in under 20 minutes.
 
 ## Run locally
 
+> A virtual environment keeps all dependencies isolated — nothing gets installed globally on your machine.
+
+**1. Clone the repo**
 ```bash
 git clone https://github.com/ubp-as/CanSign-AI.git
 cd CanSign-AI
+```
+
+**2. Create and activate a virtual environment**
+```bash
+# Create the venv (one time only)
+python -m venv venv
+
+# Activate it
+# macOS / Linux:
+source venv/bin/activate
+# Windows:
+venv\Scripts\activate
+```
+
+**3. Install dependencies**
+```bash
 pip install -r requirements_app.txt
 ```
 
-Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/CanSign-AI), place it in the project root, then:
+**4. Download the model**
 
+Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/CanSign-AI) and place it in the project root.
+
+**5. Start the server**
 ```bash
 uvicorn app.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Open **http://localhost:8000**
+
+**6. When you're done, deactivate the venv**
+```bash
+deactivate
+```
+
+---
+
+## CLI prediction (optional)
+
+To test a single image from the command line, install the full dev dependencies instead:
+
+```bash
+pip install -r requirements.txt
+python predict_image.py path/to/sign.jpg
+```
 
 ---
 
@@ -90,8 +128,8 @@ CanSign-AI/
 ├── evaluate_model.py        # Per-class accuracy breakdown
 ├── predict_image.py         # CLI inference script
 ├── canadian_labels.py       # GTSRB class ID → Canadian sign name mapping
-├── requirements.txt         # Local dev dependencies
-├── requirements_app.txt     # App/server dependencies
+├── requirements.txt         # Full dev dependencies (CLI tools + training)
+├── requirements_app.txt     # App/server dependencies only
 └── Dockerfile               # Container config for HF Spaces
 ```
 
@@ -102,7 +140,7 @@ CanSign-AI/
 - **Dataset:** GTSRB (German Traffic Sign Recognition Benchmark) — 50,000+ images, 43 classes
 - **Architecture:** Custom CNN — 2 conv blocks (32→64 filters), BatchNormalization, Dropout, Dense classifier
 - **Training:** tf.data pipeline with augmentation (rotation, zoom, brightness — no horizontal flip)
-- **Inference:** Plain resize + normalize to match training pipeline exactly; no post-processing crop
+- **Inference:** HSV crop to isolate sign region → resize to 32×32 → normalize; same pipeline used in both the web app and CLI
 - **Hardware:** Google Colab T4 GPU (~20 min training time)
 - **Accuracy:** 99%+ on held-out GTSRB test set
 

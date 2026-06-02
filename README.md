@@ -115,18 +115,19 @@ Content-Type: multipart/form-data
 ```
 CanSign-AI/
 ├── app/
-│   ├── app.py               # FastAPI backend + OOD rejection logic
+│   ├── app.py                 # FastAPI backend + OOD rejection logic
 │   └── static/
-│       └── index.html       # Frontend (drag-and-drop UI)
-├── train_colab.ipynb        # Training notebook (Google Colab, T4 GPU)
-├── cnn_model.py             # CNN architecture definition
-├── data_preprocessing.py    # Data loading, augmentation, train/test split
-├── evaluate_model.py        # Per-class accuracy breakdown
-├── predict_image.py         # CLI inference script
-├── canadian_labels.py       # GTSRB class ID → Canadian sign name mapping
-├── requirements.txt         # Full dev dependencies (CLI tools + training)
-├── requirements_app.txt     # App/server dependencies only
-└── Dockerfile               # Container config for HF Spaces
+│       └── index.html         # Frontend (drag-and-drop UI)
+├── train_colab.ipynb          # Training notebook (Google Colab, T4 GPU)
+├── cnn_model.py               # CNN architecture definition
+├── data_preprocessing.py      # Data loading, augmentation, train/test split
+├── evaluate_model.py          # Per-class accuracy breakdown
+├── predict_image.py           # CLI inference script
+├── canadian_labels.py         # GTSRB class ID → Canadian sign name mapping
+├── requirements.txt           # Full dev dependencies (CLI tools + training)
+├── requirements_app.txt       # App/server dependencies only
+└── Dockerfile                 # Container config for HF Spaces
+└── traffic_sign_model.keras   # trained model
 ```
 
 ---

@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+-e 
+# Model weights — too large for GitHub, hosted on Hugging Face Spaces
+traffic_sign_model.keras
+traffic_sign_model.h5
+
+# Training artifacts
+training_curves.png
+*.zip

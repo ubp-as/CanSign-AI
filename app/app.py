@@ -112,9 +112,12 @@ def is_out_of_distribution(predictions: np.ndarray) -> bool:
     top2 = float(sorted_preds[1]) if len(sorted_preds) > 1 else 0.0
     entropy = float(-np.sum(predictions * np.log(predictions + 1e-10)))
 
-    if top1 < 0.65:          return True
-    if (top1 - top2) < 0.45: return True
-    if entropy > 1.0:        return True
+    if top1 < 0.85:          
+        return True
+    if (top1 - top2) < 0.60: 
+        return True
+    if entropy > 0.80:       
+        return True
     return False
 
 

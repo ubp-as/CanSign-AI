@@ -100,18 +100,21 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
 def is_out_of_distribution(predictions: np.ndarray) -> bool:
     """
     Reject images that are clearly not traffic signs.
-      - top1 >= 0.50  : model must prefer at least one class
-      - gap  >= 0.30  : top prediction must lead the runner-up
-      - entropy < 1.5 : predictions shouldn't be nearly uniform
+
+    Thresholds balance rejecting random objects vs accepting real-world
+    sign photos that may be slightly noisy or angled:
+      - top1 >= 0.65  : model must be fairly confident in one class
+      - gap  >= 0.45  : top prediction must clearly lead the runner-up
+      - entropy < 1.0 : predictions shouldn't be spread across many classes
     """
     sorted_preds = np.sort(predictions)[::-1]
     top1 = float(sorted_preds[0])
     top2 = float(sorted_preds[1]) if len(sorted_preds) > 1 else 0.0
     entropy = float(-np.sum(predictions * np.log(predictions + 1e-10)))
 
-    if top1 < 0.50:       return True
-    if (top1 - top2) < 0.30: return True
-    if entropy > 1.5:     return True
+    if top1 < 0.65:          return True
+    if (top1 - top2) < 0.45: return True
+    if entropy > 1.0:        return True
     return False
 
 

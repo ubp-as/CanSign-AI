@@ -40,7 +40,7 @@ cd CanSign-AI
 **2. Create and activate a virtual environment**
 ```bash
 # Create the venv (one time only)
-python -m venv venv
+python3 -m venv venv
 
 # Activate it
 # macOS / Linux:

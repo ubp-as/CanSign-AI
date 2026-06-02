@@ -30,59 +30,73 @@ if model_path is None:
 print(f"✅ Loading model from: {model_path}")
 model = tf.keras.models.load_model(model_path)
 
-# ── Label Mapping (Inlined for HF Spaces portability) ─────────────────────────
-CANADIAN_SIGNS = {
-    0: "Speed Limit 20", 1: "Speed Limit 30", 2: "Speed Limit 50", 3: "Speed Limit 60",
-    4: "Speed Limit 70", 5: "Speed Limit 80", 6: "End Speed Limit 80", 7: "Speed Limit 100",
-    8: "Speed Limit 120", 9: "No Passing", 10: "No Passing (Trucks)", 11: "Right of Way at Intersection",
-    12: "Priority Road", 13: "Yield", 14: "Stop", 15: "No Vehicles", 16: "No Trucks", 17: "No Entry",
-    18: "General Caution", 19: "Dangerous Curve Left", 20: "Dangerous Curve Right", 21: "Double Curve",
-    22: "Bumpy Road", 23: "Slippery Road", 24: "Road Narrows Right", 25: "Road Work", 26: "Traffic Signals",
-    27: "Pedestrian Crossing", 28: "Children Crossing", 29: "Bicycles Crossing", 30: "Ice / Snow",
-    31: "Wild Animals Crossing", 32: "End of All Restrictions", 33: "Turn Right Ahead", 34: "Turn Left Ahead",
-    35: "Ahead Only", 36: "Go Straight or Right", 37: "Go Straight or Left", 38: "Keep Right", 39: "Keep Left",
-    40: "Roundabout Mandatory", 41: "End of No Passing", 42: "End of No Passing (Trucks)"
-}
+# ── Label Mapping ─────────────────────────────────────────────────────────────
+import sys, pathlib
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
+from canadian_labels import CANADIAN_SIGNS
 
-# ── Preprocessing (matches training pipeline exactly: resize + normalize only) ─
+# ── Preprocessing (HSV crop + resize + normalize — matches predict_image.py) ──
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     img = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
     if img is None:
         raise ValueError("Invalid image format")
-    resized = cv2.resize(img, (32, 32))
+
+    # HSV color masking to isolate the sign region (Red, Yellow, Blue)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    masks = [
+        cv2.inRange(hsv, np.array([0,   70,  50]), np.array([10,  255, 255])),  # Red 1
+        cv2.inRange(hsv, np.array([170, 70,  50]), np.array([180, 255, 255])),  # Red 2
+        cv2.inRange(hsv, np.array([20,  80,  80]), np.array([35,  255, 255])),  # Yellow
+        cv2.inRange(hsv, np.array([100, 70,  70]), np.array([120, 255, 255])),  # Blue
+    ]
+    mask = cv2.bitwise_or(
+        cv2.bitwise_or(masks[0], masks[1]),
+        cv2.bitwise_or(masks[2], masks[3])
+    )
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN,  kernel)
+
+    cropped = img  # fallback: use full image if no sign region found
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if contours:
+        c        = max(contours, key=cv2.contourArea)
+        area     = cv2.contourArea(c)
+        img_area = img.shape[0] * img.shape[1]
+        if 0.05 < (area / img_area) < 0.80:
+            x, y, w, h = cv2.boundingRect(c)
+            pad = int(max(w, h) * 0.1)
+            x1, y1 = max(0, x - pad),             max(0, y - pad)
+            x2, y2 = min(img.shape[1], x + w + pad), min(img.shape[0], y + h + pad)
+            cropped = img[y1:y2, x1:x2]
+
+    resized = cv2.resize(cropped, (32, 32))
     return np.expand_dims(resized.astype(np.float32) / 255.0, axis=0)
 
-def is_out_of_distribution(predictions: np.ndarray, top_k: int = 3) -> bool:
-    """
-    Reject if top confidence is low OR predictions are too spread out.
-    Uses numpy only — no scipy needed.
 
-    Thresholds explained:
-    - top_conf >= 0.92: model must be strongly committed to ONE class
-    - entropy < 0.8: very little probability mass on other classes
-    - top2_gap >= 0.70: top prediction must dominate over #2 by a wide margin
-    All three must pass. A real sign typically scores 0.95+, entropy ~0.1, gap ~0.9.
-    A random photo spreads probability across many classes even if one "wins".
+def is_out_of_distribution(predictions: np.ndarray) -> bool:
+    """
+    Reject images that are clearly not traffic signs.
+
+    Thresholds are intentionally permissive so real-world sign photos
+    (which are noisier than clean GTSRB crops) are not falsely rejected:
+      - top1 >= 0.50  : model must prefer at least one class
+      - gap  >= 0.30  : top prediction should lead the runner-up
+      - entropy < 1.5 : predictions shouldn't be nearly uniform
     """
     sorted_preds = np.sort(predictions)[::-1]
-    top1 = sorted_preds[0]
-    top2 = sorted_preds[1] if len(sorted_preds) > 1 else 0.0
-    
-    # Calculate entropy (lower = more confident)
-    entropy = -np.sum(predictions * np.log(predictions + 1e-10))
-    
-    # Tuned thresholds - balanced for real-world signs
-    if top1 < 0.88:                    # Main confidence threshold (was 0.92)
+    top1 = float(sorted_preds[0])
+    top2 = float(sorted_preds[1]) if len(sorted_preds) > 1 else 0.0
+
+    entropy = float(-np.sum(predictions * np.log(predictions + 1e-10)))
+
+    if top1 < 0.50:
         return True
-    if (top1 - top2) < 0.65:           # Gap between top two (was 0.70)
+    if (top1 - top2) < 0.30:
         return True
-    if entropy > 0.45:                 # Entropy threshold (was ~0.40)
+    if entropy > 1.5:
         return True
-    
-    # Extra safety: if top-3 don't dominate
-    if np.sum(sorted_preds[:3]) < 0.96:
-        return True
-        
+
     return False
 
 # ── API Endpoints ─────────────────────────────────────────────────────────────

@@ -54,18 +54,14 @@ venv\Scripts\activate
 pip install -r requirements_app.txt
 ```
 
-**4. Download the model**
-
-Download `traffic_sign_model.keras` from the [Hugging Face Space](https://huggingface.co/spaces/ubp-as/CanSign-AI) and place it in the project root.
-
-**5. Start the server**
+**4. Start the server**
 ```bash
 uvicorn app.app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Open **http://localhost:8000**
 
-**6. When you're done, deactivate the venv**
+**5. When you're done, deactivate the venv**
 ```bash
 deactivate
 ```

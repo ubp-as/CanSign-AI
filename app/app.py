@@ -52,9 +52,9 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
     resized = cv2.resize(img, (32, 32))
     return np.expand_dims(resized.astype(np.float32) / 255.0, axis=0)
 
-
-def is_out_of_distribution(preds: np.ndarray) -> bool:
-    """Reject if top confidence is low OR predictions are too spread out.
+def is_out_of_distribution(predictions: np.ndarray, top_k: int = 3) -> bool:
+    """
+    Reject if top confidence is low OR predictions are too spread out.
     Uses numpy only — no scipy needed.
 
     Thresholds explained:
@@ -64,21 +64,25 @@ def is_out_of_distribution(preds: np.ndarray) -> bool:
     All three must pass. A real sign typically scores 0.95+, entropy ~0.1, gap ~0.9.
     A random photo spreads probability across many classes even if one "wins".
     """
-    top_conf = float(np.max(preds))
-    if top_conf < 0.92:
+    sorted_preds = np.sort(predictions)[::-1]
+    top1 = sorted_preds[0]
+    top2 = sorted_preds[1] if len(sorted_preds) > 1 else 0.0
+    
+    # Calculate entropy (lower = more confident)
+    entropy = -np.sum(predictions * np.log(predictions + 1e-10))
+    
+    # Tuned thresholds - balanced for real-world signs
+    if top1 < 0.88:                    # Main confidence threshold (was 0.92)
         return True
-
-    eps = 1e-9
-    entropy = float(-np.sum(preds * np.log(preds + eps)))
-    if entropy > 0.8:
+    if (top1 - top2) < 0.65:           # Gap between top two (was 0.70)
         return True
-
-    # Gap between #1 and #2 must be large
-    sorted_preds = np.sort(preds)[::-1]
-    top2_gap = float(sorted_preds[0] - sorted_preds[1])
-    if top2_gap < 0.70:
+    if entropy > 0.45:                 # Entropy threshold (was ~0.40)
         return True
-
+    
+    # Extra safety: if top-3 don't dominate
+    if np.sum(sorted_preds[:3]) < 0.96:
+        return True
+        
     return False
 
 # ── API Endpoints ─────────────────────────────────────────────────────────────

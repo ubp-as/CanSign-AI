@@ -2,7 +2,7 @@
 
 **[Try the live demo →](https://huggingface.co/spaces/ubp-as/CanSign-AI)**
 
-A CNN-based Canadian traffic sign classifier trained on 50,000+ images across 43 classes. Achieves **99%+ test accuracy** on GTSRB. Includes a drag-and-drop web demo — upload any traffic sign photo and get an instant prediction with confidence scores. Non-sign images are automatically rejected.
+A CNN-based Canadian traffic sign classifier trained on 50,000+ images across 43 classes. Achieves **90%+ test accuracy** on GTSRB. Includes a drag-and-drop web demo — upload any traffic sign photo and get an instant prediction with confidence scores. Non-sign images are automatically rejected.
 
 ![Web Demo](preview.png)
 
